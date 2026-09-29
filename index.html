@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Le code du bunker A (Bunker Alfa) de Last Day on Earth pour aujourd’hui, mis à jour chaque jour. Codes du mois, valables sur Android et iOS.">
+<meta name="theme-color" content="#1b2120">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232b322c'/%3E%3Cpath fill='%23e39a2c' fill-rule='evenodd' d='M12.5 5H19.5L26 27H20.6L19.3 22.4H12.7L11.4 27H6Z M14.06 18H17.94L16 11.4Z'/%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Bunker Code">
+<meta property="og:title" content="Bunker Code">
+<meta property="og:description" content="Le code du bunker A pour aujourd’hui, mis à jour chaque jour. Last Day on Earth, Android et iOS.">
+<meta property="og:image" content="https://bunkercode.fr/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://bunkercode.fr/">
+<meta name="twitter:card" content="summary_large_image">
+<title>Bunker Code</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Roboto:wght@400;500&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--frame:#2a3230;--block:#1b2120;--block2:#212928;--txt:#e6e8e6;--dim:#98a3a0;--amber:#e39a2c;--amber-d:#b8620f}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--txt);font:400 1.05rem/1.4 Roboto,system-ui,sans-serif;
+ background:radial-gradient(1200px 700px at 50% 0,#4d4837,#2b322c 70%) fixed #2b322c}
+main{max-width:820px;margin:0 auto;padding:22px 14px 44px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{font-weight:500;font-size:1.6rem;margin:0}
+.sub{color:var(--dim);margin:2px 0 16px}
+select{font:inherit;background:var(--block);color:var(--txt);border:1px solid #3b4644;border-radius:3px;padding:7px 10px;cursor:pointer}
+select:focus-visible,button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.grid{display:grid;gap:12px;padding:14px;background:var(--frame);box-shadow:0 12px 40px rgba(0,0,0,.35);
+ grid-template-areas:"dial" "door" "list"}
+.dial{grid-area:dial;background:var(--block);padding:18px 16px 10px}
+.door{grid-area:door;background:var(--block2);padding:16px;align-self:start}
+.list{grid-area:list}
+@media(min-width:760px){.grid{grid-template-columns:1fr 1fr;grid-template-areas:"dial door" "list door"}}
+.plate{font-family:"Alfa Slab One",Georgia,serif;font-size:1.7rem;letter-spacing:.1em;text-align:center;margin-bottom:10px}
+.scale{position:relative;padding:10px 12px 8px;color:rgba(60,28,4,.8);font-size:.8rem;
+ background:radial-gradient(ellipse at 50% 60%,var(--amber),var(--amber-d) 95%);box-shadow:inset 0 0 18px rgba(80,30,0,.55)}
+.band{display:flex;justify-content:space-between;gap:6px;padding:2px 6px;margin-bottom:6px;background:rgba(80,35,5,.18)}
+.band b{font-weight:500}.band em{font-style:normal}
+.ticks{height:16px;margin-top:10px;background:repeating-linear-gradient(90deg,rgba(50,22,3,.85) 0 2px,transparent 2px 7px)}
+.needle{position:absolute;top:0;bottom:0;left:calc(var(--n,8) * 1%);width:5px;margin-left:-2.5px;background:#7d1010;box-shadow:0 0 6px rgba(0,0,0,.5)}
+.track{position:relative;height:24px}
+.marker{position:absolute;left:calc(var(--n,8) * 1%);top:4px;transform:translateX(-50%);color:#a9b1af;font-size:.85rem}
+@media(prefers-reduced-motion:no-preference){.needle,.marker{transition:left 1s cubic-bezier(.2,.8,.2,1)}}
+.date{margin:0;font-size:1.15rem;font-weight:500}
+.digits{display:flex;gap:.08em;margin:6px 0 0;color:var(--amber);font:500 clamp(2.6rem,13vw,3.8rem)/1.15 "Roboto Mono",ui-monospace,monospace}
+.err{font:400 1.05rem Roboto,sans-serif;color:#e0a060;margin:8px 0}
+.until{color:var(--dim);margin:10px 0 0}
+button{margin-top:16px;font:inherit;font-weight:500;background:var(--amber);color:#1b1206;border:0;border-radius:3px;padding:11px 22px;cursor:pointer}
+.actrow{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.actrow button{margin-top:0}
+.linklike{background:transparent;color:var(--dim);border:0;padding:4px 0;text-decoration:underline;text-underline-offset:3px}
+.linklike:hover{color:var(--amber)}
+.copy .linklike{padding:0}
+button:hover{background:#efac47}
+h2{font-size:.95rem;font-weight:400;color:var(--dim);margin:0 0 8px}
+table{width:100%;border-collapse:separate;border-spacing:0 2px}
+td{padding:12px 16px;background:var(--block)}
+td:last-child{text-align:right;font-family:"Roboto Mono",ui-monospace,monospace;letter-spacing:.06em}
+tr.now td{color:var(--amber)}
+tr.now td:last-child::after{content:"  ›"}
+footer{margin-top:20px;color:var(--dim);font-size:.9rem}
+.contactbar{margin-top:14px}
+.ghost{background:transparent;color:var(--txt);border:1px solid #4a5654}
+.ghost:hover{background:#2a3230}
+dialog{width:min(92vw,460px);padding:20px;background:var(--block2);color:var(--txt);border:1px solid #3b4644;border-radius:4px}
+dialog::backdrop{background:rgba(0,0,0,.65)}
+dialog h2{font-size:1.2rem;font-weight:500;color:var(--txt);margin:0 0 14px}
+dialog label{display:block;margin-bottom:12px;color:var(--dim);font-size:.95rem}
+dialog textarea,dialog input[type=email]{display:block;width:100%;margin-top:4px;padding:10px;font:inherit;color:var(--txt);background:var(--block);border:1px solid #3b4644;border-radius:3px}
+dialog textarea{resize:vertical}
+dialog textarea:focus-visible,dialog input:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.trap{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.note{color:var(--dim);font-size:.85rem;margin:0 0 10px}
+#cStatus{min-height:1.4em;margin:0 0 8px;color:var(--amber)}
+.actions{display:flex;gap:10px}
+.actions button{margin-top:0}
+.copy{margin:6px 0 0;color:var(--dim);font-size:.9rem}
+.next{margin:4px 0 0;color:var(--amber)}
+</style>
+</head>
+<body>
+<main>
+ <header>
+  <h1>Bunker Code</h1>
+  <select id="lang" aria-label="Language"></select>
+ </header>
+ <p class="sub" id="sub"></p>
+
+ <div class="grid">
+  <section class="dial" id="dial" aria-hidden="true">
+   <div class="plate">RADIO</div>
+   <div class="scale">
+    <div class="band"><b>LW</b><span>160</span><span>180</span><span>200</span><span>220</span><span>250</span><span>280</span><em>kHz</em></div>
+    <div class="band"><b>MW</b><span>500</span><span>700</span><span>1000</span><span>1300</span><span>1600</span><em>kHz</em></div>
+    <div class="band"><b>SW</b><span>3</span><span>4</span><span>7</span><span>9</span><span>11</span><span>12</span><span>14</span><em>MHz</em></div>
+    <div class="ticks"></div>
+    <div class="needle"></div>
+   </div>
+   <div class="track"><span class="marker">▲</span></div>
+  </section>
+
+  <section class="door">
+   <!-- Seule cette zone est annoncée par les lecteurs d'écran -->
+   <div aria-live="polite">
+    <p class="date" id="date"></p>
+    <div class="digits" id="digits"></div>
+    <p class="until" id="until"></p>
+   </div>
+   <p class="next" id="next" role="timer"></p>
+   <div class="actrow">
+    <button id="copy" type="button" hidden></button>
+    <button id="report" class="linklike" type="button" hidden></button>
+   </div>
+  </section>
+
+  <section class="list">
+   <h2 id="tt"></h2>
+   <table><tbody id="rows"></tbody></table>
+  </section>
+ </div>
+
+ <footer id="footer"></footer>
+ <p class="copy" id="copyright"></p>
+ <p class="copy"><a id="legalLink" class="linklike" href="mentions.html"></a></p>
+ <div class="contactbar"><button id="openContact" class="ghost" type="button" hidden></button></div>
+
+ <dialog id="contact" aria-labelledby="cTitle">
+  <form id="cForm">
+   <h2 id="cTitle"></h2>
+   <label><span id="cMsgL"></span><textarea name="message" required maxlength="1000" rows="5"></textarea></label>
+   <label><span id="cMailL"></span><input type="email" name="email" maxlength="120" autocomplete="email"></label>
+   <input type="text" name="website" class="trap" tabindex="-1" autocomplete="off" aria-hidden="true">
+   <p class="note" id="cNote"></p>
+   <p id="cStatus" role="status"></p>
+   <div class="actions"><button id="cSend" type="submit"></button><button id="cClose" type="button" class="ghost"></button></div>
+  </form>
+ </dialog>
+</main>
+
+<script>
+/* Chaque mois a son fichier : codes/AAAA/AAAA-MM.json (ex. codes/2026/2026-10.json)
+   Contenu : [ [jour début, jour fin, "code"], ... ]
+   CODES garde en mémoire les mois déjà chargés. */
+let CODES = {};
+
+/* Fuseau horaire utilisé pour déterminer "aujourd'hui".
+   null = fuseau du visiteur. Remplacez par ex. "Europe/Moscow"
+   si le code change à minuit heure du jeu. */
+const FUSEAU = "UTC";
+const TZ = FUSEAU || undefined;
+
+let T = {};            // textes chargés depuis lang/<code>.json
+let LANGS = {};        // langues actives (lang/index.json)
+let lang = "en";       // langue active
+let loadFailed = false;
+let report_code = "";
+
+const $ = id => document.getElementById(id);
+const tr = (key, vars = {}) => (T[lang] && T[lang][key] || T.en[key] || "").replace(/\{(\w+)\}/g, (_, k) => vars[k]);
+const cap = str => str.charAt(0).toLocaleUpperCase(lang) + str.slice(1);
+/* N'écrit dans le DOM que si le texte a changé (évite les réannonces des lecteurs d'écran) */
+const setText = (el, s) => { if (el.textContent !== s) el.textContent = s; };
+
+function aujourdhui(){
+  const p = new Intl.DateTimeFormat("en-CA", {year:"numeric", month:"2-digit", day:"2-digit", timeZone: TZ}).format(new Date());
+  const [y, m, d] = p.split("-").map(Number);
+  return {y, m, d, key: y + "-" + String(m).padStart(2, "0")};
+}
+const dateOf = (y, m, d) => new Date(Date.UTC(y, m - 1, d, 12));
+const fmt = opts => new Intl.DateTimeFormat(lang, {...opts, timeZone: "UTC"});
+
+function chooseLang(){
+  try { const saved = localStorage.getItem("lang"); if (saved && LANGS[saved]) return saved; } catch(e){}
+  for (const l of (navigator.languages || [navigator.language || "en"])) {
+    const base = l.toLowerCase().split("-")[0];
+    if (LANGS[base]) return base;
+  }
+  return LANGS.en ? "en" : Object.keys(LANGS)[0];
+}
+
+const AIGUILLE = "hasard";
+const SEMAINE = [8, 22, 36, 50, 64, 78, 92];   // lundi → dimanche, position de l'aiguille en %
+
+function positionAiguille(t){
+  if (AIGUILLE === "semaine") {
+    return SEMAINE[(dateOf(t.y, t.m, t.d).getUTCDay() + 6) % 7];   // lundi = 0
+  }
+  let h = t.y * 10000 + t.m * 100 + t.d;                            // ex. 20260928
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h = (h ^ (h >>> 16)) >>> 0;
+  return 8 + (h % 8400) / 100;
+}
+
+const STATS_URL = "https://bunkera.goatcounter.com/count";
+if (STATS_URL) {
+  const sc = document.createElement("script");
+  sc.async = true;
+  sc.dataset.goatcounter = STATS_URL;
+  sc.src = "https://gc.zgo.at/count.js";
+  document.head.appendChild(sc);
+}
+
+const CONTACT_URL = "https://api.web3forms.com/submit";
+const CONTACT_KEY = "028781c6-9392-407e-be0f-eedcbfdc40e4";
+
+function renderContact(){
+  $("report").textContent = tr("report");
+  const map = {openContact:"contact", cTitle:"contactTitle", cMsgL:"contactMsg", cMailL:"contactEmail", cNote:"contactNote", cSend:"contactSend", cClose:"contactClose"};
+  for (const id in map) $(id).textContent = tr(map[id]);
+  $("openContact").hidden = !CONTACT_URL;
+}
+
+$("openContact").onclick = () => { $("cStatus").textContent = ""; $("contact").showModal(); };
+$("report").onclick = () => {
+  $("cStatus").textContent = "";
+  const ta = $("cForm").message;
+  ta.value = tr("reportPrefill", {date: $("date").textContent, code: report_code});
+  $("contact").showModal();
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+};
+$("cClose").onclick = () => $("contact").close();
+$("cForm").onsubmit = async e => {
+  e.preventDefault();
+  const f = new FormData($("cForm")), st = $("cStatus"), btn = $("cSend");
+  if (f.get("website")) { st.textContent = tr("contactSent"); return; }   /* champ piège : seuls les robots le remplissent */
+  btn.disabled = true; st.textContent = tr("contactSending");
+  const body = {subject: "Message du site Bunker Code", from_name: "Site Bunker Code", message: f.get("message"), email: f.get("email")};
+  if (CONTACT_KEY) body.access_key = CONTACT_KEY;
+  try {
+    const r = await fetch(CONTACT_URL, {method: "POST", headers: {"Content-Type": "application/json", "Accept": "application/json"}, body: JSON.stringify(body)});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.success === false) throw new Error(r.status);
+    st.textContent = tr("contactSent"); $("cForm").reset();
+    setTimeout(() => btn.disabled = false, 30000);   /* anti-rafale : bouton bloqué 30 s après un envoi réussi */
+    return;
+  } catch (err) { st.textContent = tr("contactError"); }
+  btn.disabled = false;
+};
+
+/* Instant (en ms) où commence le jour y-m-d dans le fuseau choisi (gère l'heure d'été) */
+function decalage(ts){
+  const p = {};
+  new Intl.DateTimeFormat("en-US", {timeZone: TZ, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric"})
+    .formatToParts(ts).forEach(x => p[x.type] = Number(x.value));
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(ts / 1000) * 1000;
+}
+function debutJour(y, m, d){
+  const g = Date.UTC(y, m - 1, d);
+  return g - decalage(g - decalage(g));
+}
+
+function render(){
+  const t = aujourdhui();
+  const mois = CODES[t.key] || [];
+  const ligne = mois.find(([a, b, c]) => t.d >= a && t.d <= b && c);   // un code vide compte comme absent
+
+  document.documentElement.lang = lang;
+  document.title = "Bunker Code";   // volontairement fixe, non traduit
+  document.querySelector('meta[name="description"]').content = tr("metaDesc");
+  $("sub").textContent = tr("sub");
+  $("footer").textContent = tr("footer");
+  $("legalLink").textContent = tr("legal");
+  const an = new Date().getUTCFullYear();   /* © 2026, puis 2026–2027 à partir de l'an prochain, automatiquement */
+  $("copyright").textContent = "© " + (an > 2026 ? "2026–" + an : "2026") + " Obi";
+  renderContact();
+  setText($("date"), cap(fmt({weekday:"long", day:"numeric", month:"long", year:"numeric"}).format(dateOf(t.y, t.m, t.d))));
+  $("tt").textContent = tr("all", {month: fmt({month:"long", year:"numeric"}).format(dateOf(t.y, t.m, 1))});
+
+  const digits = $("digits"), until = $("until"), copy = $("copy");
+  const sig = lang + "|" + (ligne ? ligne[2] : loadFailed ? "!load" : "!none");
+  if (digits.dataset.sig !== sig) {          // on ne reconstruit que si quelque chose a changé
+    digits.dataset.sig = sig;
+    digits.innerHTML = "";
+    if (ligne) {
+      [...ligne[2]].forEach(c => { const s = document.createElement("span"); s.textContent = c; digits.appendChild(s); });
+    } else {
+      const p = document.createElement("p");
+      p.className = "err";
+      p.textContent = loadFailed ? tr("loadError") : tr("none");
+      digits.appendChild(p);
+    }
+  }
+  if (ligne){
+    const short = d => fmt({day:"numeric", month:"long"}).format(dateOf(t.y, t.m, d));
+    setText(until, ligne[0] === ligne[1] ? tr("single") : tr("range", {a: short(ligne[0]), b: short(ligne[1])}));
+    copy.hidden = false;
+    report_code = ligne[2];
+    $("report").hidden = !CONTACT_URL;
+    copy.textContent = tr("copy");
+    copy.onclick = async () => {
+      try { await navigator.clipboard.writeText(ligne[2]); copy.textContent = tr("copied"); }
+      catch(e){ copy.textContent = tr("copyFail"); }
+      setTimeout(() => copy.textContent = tr("copy"), 1800);
+    };
+  } else {
+    setText(until, loadFailed ? "" : tr("retry"));
+    copy.hidden = true;
+    $("report").hidden = true;
+  }
+
+  const nx = $("next");
+  if (ligne) {
+    /* le code change à la fin de sa période de validité, à minuit dans le fuseau du jeu */
+    const total = Math.max(0, Math.ceil((debutJour(t.y, t.m, ligne[1] + 1) - Date.now()) / 60000));
+    nx.textContent = tr("next", {h: Math.floor(total / 60), m: total % 60});
+    nx.hidden = false;
+  } else nx.hidden = true;
+
+  $("dial").style.setProperty("--n", positionAiguille(t));
+
+  $("rows").replaceChildren(...mois.map(([a, b, c]) => {
+    const row = document.createElement("tr");
+    if (ligne && ligne[0] === a) row.className = "now";
+    const d1 = document.createElement("td"), d2 = document.createElement("td");
+    d1.textContent = a === b ? a : a + " – " + b;
+    d2.textContent = c;
+    row.append(d1, d2);
+    return row;
+  }));
+}
+
+function load(url){ return fetch(url, {cache: "no-store"}).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }); }
+
+function loadMonth(key){
+  if (key in CODES) return Promise.resolve();
+  const passe = key < aujourdhui().key;   // "2026-09" < "2026-10" : comparaison de chaînes OK
+  return fetch("codes/" + key.slice(0, 4) + "/" + key + ".json", {cache: "no-store"})
+    .then(r => r.status === 404 ? [] : r.ok ? r.json() : Promise.reject(r.status))
+    .then(d => {
+      loadFailed = false;
+      if (d.length || passe) CODES[key] = d;   // mois courant vide : pas de cache, on retentera au prochain cycle
+    })
+    .catch(() => { loadFailed = true; });      // pas mis en cache : nouvel essai au prochain cycle
+}
+
+function loadLang(code){
+  if (T[code]) return Promise.resolve();
+  return load("lang/" + code + ".json").then(d => { T[code] = d; });
+}
+
+load("lang/index.json")
+  .then(list => {
+    LANGS = list;
+    lang = chooseLang();
+    const sel = $("lang");
+    sel.innerHTML = Object.keys(LANGS).map(k => '<option value="' + k + '">' + LANGS[k] + '</option>').join("");
+    sel.value = lang;
+    sel.onchange = () => loadLang(sel.value).then(() => {
+      lang = sel.value;
+      try { localStorage.setItem("lang", lang); } catch(e){}
+      render();
+    });
+    /* l'anglais sert aussi de secours si un texte manque dans une autre langue */
+    return Promise.all([loadLang("en"), loadLang(lang), loadMonth(aujourdhui().key)]);
+  })
+  .then(() => {
+    render();
+    /* Chaque minute : charge le nouveau mois si le jour a changé, puis rafraîchit */
+    setInterval(() => loadMonth(aujourdhui().key).then(render), 60000);
+  })
+  .catch(() => { $("sub").textContent = "Could not load the page data. Reload."; });
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bunker Code</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232b322c'/%3E%3Cpath fill='%23e39a2c' fill-rule='evenodd' d='M12.5 5H19.5L26 27H20.6L19.3 22.4H12.7L11.4 27H6Z M14.06 18H17.94L16 11.4Z'/%3E%3C/svg%3E">
+<style>
+:root{--frame:#2a3230;--block:#1b2120;--block2:#212928;--txt:#e6e8e6;--dim:#98a3a0;--amber:#e39a2c}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--txt);font:400 1.05rem/1.55 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+ background:radial-gradient(1200px 700px at 50% 0,#4d4837,#2b322c 70%) fixed #2b322c}
+main{max-width:680px;margin:0 auto;padding:32px 16px 56px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+a{color:var(--amber)}
+.back{color:var(--dim);text-decoration:none;font-size:.95rem}
+.back:hover{color:var(--amber)}
+select{font:inherit;background:var(--block2);color:var(--txt);border:1px solid #3b4644;border-radius:3px;padding:6px 8px;cursor:pointer}
+h1{font-weight:500;font-size:1.7rem;margin:18px 0 4px}
+.updated{color:var(--dim);margin:0}
+.card{margin-top:22px;background:var(--frame);border-radius:10px;padding:22px 22px 6px}
+h2{font-size:1.1rem;font-weight:500;color:var(--amber);margin:0 0 8px}
+section{margin-bottom:20px}
+p{margin:0 0 10px}
+footer{margin-top:26px;color:var(--dim);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+ <header>
+  <a class="back" id="back" href="index.html"></a>
+  <select id="lang" aria-label="Language"></select>
+ </header>
+ <h1 id="title"></h1>
+ <p class="updated" id="updated"></p>
+
+ <div class="card">
+  <section><h2 id="h1t"></h2><p id="h1p1"></p><p id="h1p2"></p></section>
+  <section><h2 id="h2t"></h2><p id="h2p"></p></section>
+  <section><h2 id="h3t"></h2><p id="h3p"></p></section>
+  <section><h2 id="h4t"></h2><p id="h4p"></p></section>
+  <section><h2 id="h5t"></h2><p id="h5p"></p></section>
+  <section><h2 id="h6t"></h2><p id="h6p"></p></section>
+ </div>
+
+ <footer>© 2026 Obi · <a href="index.html">bunkercode.fr</a></footer>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let T = {}, LANGS = {}, lang = "en";
+
+function chooseLang(){
+  try { const saved = localStorage.getItem("lang"); if (saved && LANGS[saved]) return saved; } catch(e){}
+  for (const l of (navigator.languages || [navigator.language || "en"])) {
+    const base = l.toLowerCase().split("-")[0];
+    if (LANGS[base]) return base;
+  }
+  return LANGS.en ? "en" : Object.keys(LANGS)[0];
+}
+const tr = key => (T[lang] && T[lang][key]) || (T.en && T.en[key]) || "";
+
+function render(){
+  document.documentElement.lang = lang;
+  document.title = "Bunker Code";
+  $("back").textContent = tr("legalBack");
+  $("title").textContent = tr("legalTitle");
+  $("updated").textContent = tr("legalUpdated");
+  $("h1t").textContent = tr("legalEditorH"); $("h1p1").textContent = tr("legalEditorP1"); $("h1p2").textContent = tr("legalEditorP2");
+  $("h2t").textContent = tr("legalHostH");   $("h2p").textContent  = tr("legalHostP");
+  $("h3t").textContent = tr("legalNatureH"); $("h3p").textContent  = tr("legalNatureP");
+  $("h4t").textContent = tr("legalFormH");   $("h4p").textContent  = tr("legalFormP");
+  $("h5t").textContent = tr("legalStatsH");  $("h5p").textContent  = tr("legalStatsP");
+  $("h6t").textContent = tr("legalIPH");     $("h6p").textContent  = tr("legalIPP");
+}
+
+function load(url){ return fetch(url, {cache: "no-store"}).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }); }
+function loadLang(code){
+  if (T[code]) return Promise.resolve();
+  return load("lang/" + code + ".json").then(d => { T[code] = d; });
+}
+
+load("lang/index.json").then(list => {
+  LANGS = list;
+  lang = chooseLang();
+  const sel = $("lang");
+  sel.innerHTML = Object.keys(LANGS).map(k => '<option value="' + k + '">' + LANGS[k] + '</option>').join("");
+  sel.value = lang;
+  sel.onchange = () => loadLang(sel.value).then(() => {
+    lang = sel.value;
+    try { localStorage.setItem("lang", lang); } catch(e){}
+    render();
+  });
+  return Promise.all([loadLang("en"), loadLang(lang)]);
+}).then(render);
+</script>
+</body>
+</html>
