@@ -108,10 +108,6 @@ a{color:var(--amber)}
 a:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .brand{font-weight:500;font-size:1.6rem;margin:0}
 .brand a{color:inherit;text-decoration:none}
-.langs{display:flex;gap:14px;font-size:.95rem}
-.langs a{color:var(--dim)}
-.langs a:hover{color:var(--amber)}
-.langs [aria-current]{color:var(--txt)}
 .crumbs{color:var(--dim);font-size:.9rem;margin:12px 0 0}
 .crumbs a{color:var(--dim)}
 .crumbs a:hover{color:var(--amber)}
@@ -253,10 +249,13 @@ def page(modele, langs, lang, chemins, titre, desc, corps, jsonld):
     defaut = "fr" if "fr" in langs else langs[0]
     alternates += f'\n<link rel="alternate" hreflang="x-default" href="{SITE_URL}{chemins[defaut]}">'
 
-    liens_langues = " ".join(
-        f'<span aria-current="true">{esc(TEXTS[l]["name"])}</span>' if l == lang
-        else f'<a href="{href(chemins[l])}" hreflang="{l}" lang="{l}">{esc(TEXTS[l]["name"])}</a>'
+    options = "".join(
+        f'<option value="{href(chemins[l])}" data-lang="{l}"{" selected" if l == lang else ""}>{esc(TEXTS[l]["name"])}</option>'
         for l in langs
+    )
+    liens_secours = " ".join(
+        f'<a href="{href(chemins[l])}" hreflang="{l}" lang="{l}">{esc(TEXTS[l]["name"])}</a>'
+        for l in langs if l != lang
     )
     an = aujourdhui().year
     copyright_ = "© " + (f"2026–{an}" if an > 2026 else "2026") + " Obi"
@@ -291,12 +290,19 @@ def page(modele, langs, lang, chemins, titre, desc, corps, jsonld):
 <main>
  <header>
   <p class="brand"><a href="{href("/")}">{SITE_NAME}</a></p>
-  <nav class="langs" aria-label="Language">{liens_langues}</nav>
+  <select id="lang" aria-label="Language">{options}</select>
+  <noscript>{liens_secours}</noscript>
  </header>
 {corps}
  <p class="copy">{copyright_}</p>
  <p class="copy"><a class="linklike" href="{href("/mentions.html")}">{esc(T["legal"])}</a></p>
 </main>
+<script>
+document.getElementById("lang").onchange = function () {{
+  try {{ localStorage.setItem("lang", this.options[this.selectedIndex].dataset.lang); }} catch (e) {{}}
+  location.href = this.value;
+}};
+</script>
 {stats}
 </body>
 </html>
