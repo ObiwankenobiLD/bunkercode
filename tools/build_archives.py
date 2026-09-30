@@ -28,7 +28,13 @@ from pathlib import Path
 # ----------------------------------------------------------------------------
 # RÉGLAGES
 # ----------------------------------------------------------------------------
-SITE_URL = "https://bunkercode.fr"
+# Ces deux valeurs sont normalement fournies automatiquement par GitHub Actions (voir deploy.yml) :
+#   SITE_URL  = adresse complète du site (ex. https://bunkercode.fr ou https://xxx.github.io/bunkercode)
+#   BASE_PATH = dossier du site sur le domaine ("" si domaine perso, "/bunkercode" sur github.io/bunkercode)
+SITE_URL = (os.environ.get("SITE_URL") or "https://bunkercode.fr").rstrip("/")
+BASE_PATH = (os.environ.get("BASE_PATH") or "").rstrip("/")
+if BASE_PATH and not BASE_PATH.startswith("/"):
+    BASE_PATH = "/" + BASE_PATH
 SITE_NAME = "Bunker Code"
 STATS_URL = "https://bunkera.goatcounter.com/count"   # même compteur que l'accueil ("" pour le retirer)
 INCLURE_MOIS_COURANT = False   # True = le mois en cours apparaît aussi dans les archives
@@ -145,6 +151,11 @@ def jour(lang, d):
     return TEXTS[lang]["first"] if d == 1 and TEXTS[lang]["first"] else str(d)
 
 
+def href(chemin):
+    """Lien interne : ajoute le dossier de base du site (ex. /bunkercode) si besoin."""
+    return BASE_PATH + chemin
+
+
 def p_index(lang):
     return f'{TEXTS[lang]["prefix"]}/archives/'
 
@@ -243,7 +254,7 @@ def page(modele, langs, lang, chemins, titre, desc, corps, jsonld):
 
     liens_langues = " ".join(
         f'<span aria-current="true">{esc(TEXTS[l]["name"])}</span>' if l == lang
-        else f'<a href="{chemins[l]}" hreflang="{l}" lang="{l}">{esc(TEXTS[l]["name"])}</a>'
+        else f'<a href="{href(chemins[l])}" hreflang="{l}" lang="{l}">{esc(TEXTS[l]["name"])}</a>'
         for l in langs
     )
     an = aujourdhui().year
@@ -278,12 +289,12 @@ def page(modele, langs, lang, chemins, titre, desc, corps, jsonld):
 <body>
 <main>
  <header>
-  <p class="brand"><a href="/">{SITE_NAME}</a></p>
+  <p class="brand"><a href="{href("/")}">{SITE_NAME}</a></p>
   <nav class="langs" aria-label="Language">{liens_langues}</nav>
  </header>
 {corps}
  <p class="copy">{copyright_}</p>
- <p class="copy"><a class="linklike" href="/mentions.html">{esc(T["legal"])}</a></p>
+ <p class="copy"><a class="linklike" href="{href("/mentions.html")}">{esc(T["legal"])}</a></p>
 </main>
 {stats}
 </body>
@@ -299,7 +310,7 @@ def fil_ariane(lang, dernier=None, y=None, m=None):
         etapes.append((dernier, p_month(lang, y, m)))
     visible = []
     for i, (nom, chemin) in enumerate(etapes):
-        visible.append(esc(nom) if i == len(etapes) - 1 else f'<a href="{chemin}">{esc(nom)}</a>')
+        visible.append(esc(nom) if i == len(etapes) - 1 else f'<a href="{href(chemin)}">{esc(nom)}</a>')
     html_ = f'<nav class="crumbs" aria-label="{esc(T["crumbs"])}">' + " › ".join(visible) + "</nav>"
     ld = {
         "@type": "BreadcrumbList",
@@ -325,7 +336,7 @@ def page_index(modele, langs, lang, archives):
                 n = len(archives[(yy, mm)])
                 compte = T["count_one"] if n == 1 else T["count_many"].format(n=n)
                 items.append(
-                    f'<li><a href="{p_month(lang, yy, mm)}"><span>{esc(cap(label(lang, yy, mm)))}</span>'
+                    f'<li><a href="{href(p_month(lang, yy, mm))}"><span>{esc(cap(label(lang, yy, mm)))}</span>'
                     f'<span class="n">{esc(compte)}</span></a></li>'
                 )
             blocs.append(f'<section class="list"><h2>{y}</h2><ul class="months">{"".join(items)}</ul></section>')
@@ -361,11 +372,11 @@ def page_mois(modele, langs, lang, y, m, lignes, prec, suiv):
     )
     pager = []
     if prec:
-        pager.append(f'<a rel="prev" href="{p_month(lang, *prec)}">← {esc(cap(label(lang, *prec)))}</a>')
+        pager.append(f'<a rel="prev" href="{href(p_month(lang, *prec))}">← {esc(cap(label(lang, *prec)))}</a>')
     else:
         pager.append("<span></span>")
     if suiv:
-        pager.append(f'<a rel="next" href="{p_month(lang, *suiv)}">{esc(cap(label(lang, *suiv)))} →</a>')
+        pager.append(f'<a rel="next" href="{href(p_month(lang, *suiv))}">{esc(cap(label(lang, *suiv)))} →</a>')
     corps = f"""{crumbs}
  <h1 class="page">{esc(T["m_h1"].format(**vals))}</h1>
  <p class="intro">{esc(T["sub"])}</p>
