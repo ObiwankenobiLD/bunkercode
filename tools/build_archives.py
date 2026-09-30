@@ -118,6 +118,7 @@ a:focus-visible{outline:3px solid #fff;outline-offset:2px}
 h1.page{font-size:1.5rem;font-weight:500;margin:6px 0 2px}
 .intro{color:var(--dim);margin:0 0 16px}
 .panel{display:grid;gap:12px;padding:14px;background:var(--frame);box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.panel .list{grid-area:auto}
 .months{list-style:none;margin:0;padding:0;display:grid;gap:2px}
 .months a{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--block);color:var(--txt);text-decoration:none}
 .months a:hover{color:var(--amber)}
