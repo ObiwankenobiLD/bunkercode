@@ -126,6 +126,20 @@ h1.page{font-size:1.5rem;font-weight:500;margin:6px 0 2px}
 """
 
 
+# Mention de bas de page par langue, lue dans lang/<code>.json (clé "footer"), comme sur l'accueil
+FOOTER = {}
+
+
+def lire_footers(langs):
+    def cle(code):
+        try:
+            return json.loads((ROOT / "lang" / f"{code}.json").read_text(encoding="utf-8")).get("footer", "")
+        except (OSError, ValueError):
+            return ""
+    for l in langs:
+        FOOTER[l] = cle(l) or cle("en")
+
+
 # ----------------------------------------------------------------------------
 # OUTILS
 # ----------------------------------------------------------------------------
@@ -259,6 +273,7 @@ def page(modele, langs, lang, chemins, titre, desc, corps, jsonld):
     )
     an = aujourdhui().year
     copyright_ = "© " + (f"2026–{an}" if an > 2026 else "2026") + " Obi"
+    pied = f'<footer>{esc(FOOTER[lang])}</footer>' if FOOTER.get(lang) else ""
     stats = (f'<script data-goatcounter="{STATS_URL}" async src="https://gc.zgo.at/count.js"></script>'
              if STATS_URL else "")
 
@@ -294,6 +309,7 @@ def page(modele, langs, lang, chemins, titre, desc, corps, jsonld):
   <noscript>{liens_secours}</noscript>
  </header>
 {corps}
+ {pied}
  <p class="copy">{copyright_}</p>
  <p class="copy"><a class="linklike" href="{href("/mentions.html")}">{esc(T["legal"])}</a></p>
 </main>
@@ -438,6 +454,7 @@ def main():
     # 2. données
     modele = lire_modele()
     langs = langues_actives()
+    lire_footers(langs)
     mois = lire_mois()
     t = aujourdhui()
     limite = (t.year, t.month)
