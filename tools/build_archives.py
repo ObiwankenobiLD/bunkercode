@@ -9,6 +9,8 @@ Ce script :
         /archives/                  /en/archives/
         /archives/2026-08/          /en/archives/2026-08/
   4. génère sitemap.xml (et robots.txt s'il n'existe pas)
+  5. vérifie les données (codes à 5 chiffres, plages valides, pas de chevauchement)
+     et aligne l'accueil sur SITE_URL (og:url, og:image, canonical)
 
 Le design (CSS, polices, favicon) est repris automatiquement de ton index.html :
 si tu changes le style de l'accueil, les archives suivent au prochain build.
@@ -17,6 +19,7 @@ Aucune installation nécessaire (Python 3 standard uniquement).
 Lancer en local :  python tools/build_archives.py
 """
 
+import calendar
 import html
 import json
 import os
@@ -188,6 +191,26 @@ def ecrire(chemin_url, contenu):
 # ----------------------------------------------------------------------------
 # LECTURE DES DONNÉES ET DU MODÈLE
 # ----------------------------------------------------------------------------
+def verifier(f, y, mo, lignes):
+    """Contrôle le contenu d'un fichier mensuel : stoppe le build si une erreur de saisie est détectée."""
+    nb = calendar.monthrange(y, mo)[1]
+    vus = set()
+    for a, b, code in lignes:
+        if not re.fullmatch(r"\d{5}", code):
+            raise SystemExit(f"Erreur dans {f} : code invalide {code!r} (5 chiffres attendus)")
+        if not 1 <= a <= b or a > nb:
+            raise SystemExit(f"Erreur dans {f} : plage invalide {a}-{b} (ce mois a {nb} jours)")
+        if b > nb:   # ex. « 30-31 » dans un mois de 30 jours : toléré, simple avertissement
+            print(f"Attention {f} : la plage {a}-{b} dépasse la fin du mois ({nb} jours)")
+        jours = set(range(a, min(b, nb) + 1))
+        if vus & jours:
+            raise SystemExit(f"Erreur dans {f} : chevauchement sur les jours {sorted(vus & jours)}")
+        vus |= jours
+    manquants = sorted(set(range(1, nb + 1)) - vus)
+    if manquants:
+        print(f"Attention {f} : jours sans code : {manquants}")
+
+
 def lire_mois():
     """Retourne {(année, mois): [(jour_début, jour_fin, code), ...]}"""
     resultat = {}
@@ -213,6 +236,7 @@ def lire_mois():
             if code:                      # un code vide compte comme absent (comme sur l'accueil)
                 lignes.append((r[0], r[1], code))
         if lignes:
+            verifier(f, y, mo, lignes)
             resultat[(y, mo)] = lignes
     return resultat
 
@@ -432,6 +456,8 @@ def sitemap(langs, cles):
     for g in groupes:
         for l, chemin in g.items():
             out.append(f"<url><loc>{SITE_URL}{chemin}</loc>")
+            if chemin == "/":
+                out.append(f"<lastmod>{aujourdhui().isoformat()}</lastmod>")
             if l is not None:
                 for l2, c2 in g.items():
                     out.append(f'<xhtml:link rel="alternate" hreflang="{l2}" href="{SITE_URL}{c2}"/>')
@@ -450,6 +476,13 @@ def main():
         shutil.rmtree(OUT)
     shutil.copytree(ROOT, OUT, ignore=shutil.ignore_patterns(
         ".git", ".github", "tools", "_site", "node_modules", "*.md", ".gitignore"))
+
+    # 1b. l'accueil reprend SITE_URL (og:url, og:image) et reçoit une balise canonical
+    idx = OUT / "index.html"
+    h = idx.read_text(encoding="utf-8").replace("https://bunkercode.fr", SITE_URL)
+    if 'rel="canonical"' not in h:
+        h = h.replace("<title>", f'<link rel="canonical" href="{SITE_URL}/">\n<title>', 1)
+    idx.write_text(h, encoding="utf-8")
 
     # 2. données
     modele = lire_modele()
