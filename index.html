@@ -8,14 +8,14 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232b322c'/%3E%3Cpath fill='%23e39a2c' fill-rule='evenodd' d='M12.5 5H19.5L26 27H20.6L19.3 22.4H12.7L11.4 27H6Z M14.06 18H17.94L16 11.4Z'/%3E%3C/svg%3E">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Bunker Code">
-<meta property="og:title" content="Bunker Code">
+<meta property="og:title" content="Bunker Code – Code du bunker Alfa du jour">
 <meta property="og:description" content="Le code du bunker A pour aujourd’hui, mis à jour chaque jour. Last Day on Earth, Android et iOS.">
 <meta property="og:image" content="https://bunkercode.fr/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:url" content="https://bunkercode.fr/">
 <meta name="twitter:card" content="summary_large_image">
-<title>Bunker Code</title>
+<title>Bunker Code – Code du bunker Alfa du jour (Last Day on Earth)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Roboto:wght@400;500&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -79,15 +79,16 @@ dialog textarea:focus-visible,dialog input:focus-visible{outline:3px solid #fff;
 .actions button{margin-top:0}
 .copy{margin:6px 0 0;color:var(--dim);font-size:.9rem}
 .next{margin:4px 0 0;color:var(--amber)}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 </style>
 </head>
 <body>
 <main>
  <header>
   <h1>Bunker Code</h1>
-  <select id="lang" aria-label="Language"></select>
+  <select id="lang" aria-label="Langue / Language"></select>
  </header>
- <p class="sub" id="sub"></p>
+ <p class="sub" id="sub">Code du bunker Alfa (bunker A) de Last Day on Earth, mis à jour chaque jour. Android et iOS.</p>
 
  <div class="grid">
   <section class="dial" id="dial" aria-hidden="true">
@@ -107,6 +108,7 @@ dialog textarea:focus-visible,dialog input:focus-visible{outline:3px solid #fff;
    <div aria-live="polite">
     <p class="date" id="date"></p>
     <div class="digits" id="digits"></div>
+    <noscript><p class="err">Activez JavaScript pour que le code se mette à jour en direct. Codes des mois précédents : <a href="archives/">archives</a>.</p></noscript>
     <p class="until" id="until"></p>
    </div>
    <p class="next" id="next" role="timer"></p>
@@ -160,7 +162,7 @@ let loadFailed = false;
 let report_code = "";
 
 const $ = id => document.getElementById(id);
-const tr = (key, vars = {}) => (T[lang] && T[lang][key] || T.en[key] || "").replace(/\{(\w+)\}/g, (_, k) => vars[k]);
+const tr = (key, vars = {}) => (T[lang] && T[lang][key] || T.en[key] || "").replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? "");
 const cap = str => str.charAt(0).toLocaleUpperCase(lang) + str.slice(1);
 /* N'écrit dans le DOM que si le texte a changé (évite les réannonces des lecteurs d'écran) */
 const setText = (el, s) => { if (el.textContent !== s) el.textContent = s; };
@@ -261,7 +263,9 @@ function render(){
   const ligne = mois.find(([a, b, c]) => t.d >= a && t.d <= b && c);   // un code vide compte comme absent
 
   document.documentElement.lang = lang;
-  document.title = "Bunker Code";   // volontairement fixe, non traduit
+  document.title = lang === "fr"
+    ? "Bunker Code – Code du bunker Alfa du jour (Last Day on Earth)"
+    : "Bunker Code – Today's Bunker Alfa code (Last Day on Earth)";
   document.querySelector('meta[name="description"]').content = tr("metaDesc");
   $("sub").textContent = tr("sub");
   $("footer").textContent = tr("footer");
@@ -280,7 +284,8 @@ function render(){
     digits.dataset.sig = sig;
     digits.innerHTML = "";
     if (ligne) {
-      [...ligne[2]].forEach(c => { const s = document.createElement("span"); s.textContent = c; digits.appendChild(s); });
+      [...ligne[2]].forEach(c => { const s = document.createElement("span"); s.textContent = c; s.setAttribute("aria-hidden", "true"); digits.appendChild(s); });
+      const sr = document.createElement("span"); sr.className = "sr"; sr.textContent = ligne[2]; digits.appendChild(sr);
     } else {
       const p = document.createElement("p");
       p.className = "err";
