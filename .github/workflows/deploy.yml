@@ -1,0 +1,37 @@
+name: Générer et déployer le site
+
+on:
+  push:
+    branches: [main]        # si ta branche s'appelle "master", remplace par [master]
+  schedule:
+    - cron: "10 0 * * *"    # tous les jours à 00h10 UTC : un nouveau mois passe dans les archives tout seul
+  workflow_dispatch:        # permet aussi de lancer à la main depuis l'onglet Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Générer les pages d'archive
+        run: python tools/build_archives.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
