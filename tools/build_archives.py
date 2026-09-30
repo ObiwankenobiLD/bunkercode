@@ -11,6 +11,8 @@ Ce script :
   4. génère sitemap.xml (et robots.txt s'il n'existe pas)
   5. vérifie les données (codes à 5 chiffres, plages valides, pas de chevauchement)
      et aligne l'accueil sur SITE_URL (og:url, og:image, canonical)
+  6. écrit le code du jour (date, chiffres) directement dans le HTML de l'accueil, pour les moteurs
+     de recherche. Le JavaScript de l'accueil le remplace ensuite par la version à jour et traduite.
 
 Le design (CSS, polices, favicon) est repris automatiquement de ton index.html :
 si tu changes le style de l'accueil, les archives suivent au prochain build.
@@ -470,6 +472,50 @@ def sitemap(langs, cles):
 # ----------------------------------------------------------------------------
 # PROGRAMME PRINCIPAL
 # ----------------------------------------------------------------------------
+JOURS_FR = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+
+
+def code_du_jour(mois):
+    """Ligne (début, fin, code) valable aujourd'hui (UTC), ou None."""
+    t = aujourdhui()
+    for a, b, c in mois.get((t.year, t.month), []):
+        if a <= t.day <= b:
+            return a, b, c
+    return None
+
+
+def prerendre_accueil(h, mois):
+    """Écrit le code du jour (en français) dans le HTML de l'accueil.
+    Le JS de l'accueil reconstruit ces éléments au chargement : les visiteurs voient donc toujours
+    la version à jour, dans leur langue. Seuls les robots qui n'exécutent pas le JS lisent ce texte."""
+    ligne = code_du_jour(mois)
+    if not ligne:
+        print("Info : pas de code pour aujourd'hui, l'accueil n'est pas pré-rempli.")
+        return h
+    a, b, code = ligne
+    t = aujourdhui()
+    fr = TEXTS["fr"]
+    mois_nom = fr["months"][t.month - 1]
+    date_txt = cap(f"{JOURS_FR[t.weekday()]} {jour('fr', t.day)} {mois_nom} {t.year}")
+    if a == b:
+        until = "Ce code est valable aujourd’hui uniquement."
+    else:
+        until = f"Ce code est valable du {jour('fr', a)} au {jour('fr', b)} {mois_nom}."
+    chiffres = "".join(f'<span aria-hidden="true">{esc(c)}</span>' for c in code)
+    chiffres += f'<span class="sr">{esc(code)}</span>'
+
+    for motif, contenu in (
+        (r'(<p class="date" id="date">)\s*(</p>)', esc(date_txt)),
+        (r'(<div class="digits" id="digits">)\s*(</div>)', chiffres),
+        (r'(<p class="until" id="until">)\s*(</p>)', esc(until)),
+    ):
+        h, n = re.subn(motif, lambda m, c=contenu: m.group(1) + c + m.group(2), h, count=1)
+        if not n:
+            print(f"Attention : emplacement introuvable dans index.html ({motif.split(chr(34))[3]}), pré-remplissage incomplet.")
+    print(f"OK : accueil pré-rempli avec le code du {date_txt} ({code}).")
+    return h
+
+
 def main():
     # 1. copie du site tel quel
     if OUT.exists():
@@ -477,18 +523,20 @@ def main():
     shutil.copytree(ROOT, OUT, ignore=shutil.ignore_patterns(
         ".git", ".github", "tools", "_site", "node_modules", "*.md", ".gitignore"))
 
-    # 1b. l'accueil reprend SITE_URL (og:url, og:image) et reçoit une balise canonical
-    idx = OUT / "index.html"
-    h = idx.read_text(encoding="utf-8").replace("https://bunkercode.fr", SITE_URL)
-    if 'rel="canonical"' not in h:
-        h = h.replace("<title>", f'<link rel="canonical" href="{SITE_URL}/">\n<title>', 1)
-    idx.write_text(h, encoding="utf-8")
-
     # 2. données
     modele = lire_modele()
     langs = langues_actives()
     lire_footers(langs)
     mois = lire_mois()
+
+    # 2b. l'accueil reprend SITE_URL (og:url, og:image), reçoit une balise canonical et le code du jour
+    idx = OUT / "index.html"
+    h = idx.read_text(encoding="utf-8").replace("https://bunkercode.fr", SITE_URL)
+    if 'rel="canonical"' not in h:
+        h = h.replace("<title>", f'<link rel="canonical" href="{SITE_URL}/">\n<title>', 1)
+    h = prerendre_accueil(h, mois)
+    idx.write_text(h, encoding="utf-8")
+
     t = aujourdhui()
     limite = (t.year, t.month)
     archives = {k: v for k, v in mois.items() if k < limite or (INCLURE_MOIS_COURANT and k == limite)}
