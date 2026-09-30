@@ -27,9 +27,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - id: pages
+        uses: actions/configure-pages@v5
       - name: Générer les pages d'archive
         run: python tools/build_archives.py
-      - uses: actions/configure-pages@v5
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
