@@ -126,6 +126,7 @@ dialog textarea:focus-visible,dialog input:focus-visible{outline:3px solid #fff;
  <footer id="footer"></footer>
  <p class="copy" id="copyright"></p>
  <p class="copy"><a id="legalLink" class="linklike" href="mentions.html"></a></p>
+ <p class="copy"><a id="archiveLink" class="linklike" href="archives/">Archives</a></p>
  <div class="contactbar"><button id="openContact" class="ghost" type="button" hidden></button></div>
 
  <dialog id="contact" aria-labelledby="cTitle">
@@ -266,6 +267,8 @@ function render(){
   $("sub").textContent = tr("sub");
   $("footer").textContent = tr("footer");
   $("legalLink").textContent = tr("legal");
+  $("archiveLink").textContent = tr("archive") || "Archives";
+  $("archiveLink").href = lang === "fr" ? "archives/" : "en/archives/";
   const an = new Date().getUTCFullYear();   /* © 2026, puis 2026–2027 à partir de l'an prochain, automatiquement */
   $("copyright").textContent = "© " + (an > 2026 ? "2026–" + an : "2026") + " Obi";
   renderContact();
