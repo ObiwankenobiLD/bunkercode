@@ -34,7 +34,7 @@ select:focus-visible,button:focus-visible{outline:3px solid #fff;outline-offset:
 .dial{grid-area:dial;background:var(--block);padding:18px 16px 10px}
 .door{grid-area:door;background:var(--block2);padding:16px;align-self:start}
 .list{grid-area:list}
-@media(min-width:760px){.grid{grid-template-columns:1fr 1fr;grid-template-areas:"dial door" "list door"}}
+@media(min-width:760px){.grid{grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;grid-template-areas:"dial list" "door list"}}
 .plate{font-family:"Alfa Slab One",Georgia,serif;font-size:1.7rem;letter-spacing:.1em;text-align:center;margin-bottom:10px}
 .scale{position:relative;padding:10px 12px 8px;color:rgba(60,28,4,.8);font-size:.8rem;
  background:radial-gradient(ellipse at 50% 60%,var(--amber),var(--amber-d) 95%);box-shadow:inset 0 0 18px rgba(80,30,0,.55)}
