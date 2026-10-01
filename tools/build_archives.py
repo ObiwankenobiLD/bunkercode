@@ -150,6 +150,14 @@ h1.page{font-size:1.5rem;font-weight:500;margin:6px 0 2px}
 .pager a{color:var(--txt)}
 .pager a:hover{color:var(--amber)}
 .sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+details.year summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;background:var(--block2);color:var(--txt);cursor:pointer;list-style:none}
+details.year summary::-webkit-details-marker{display:none}
+details.year summary::after{content:"▾";color:var(--dim)}
+details.year[open] summary::after{content:"▴"}
+details.year summary:hover::after{color:var(--amber)}
+details.year summary:focus-visible{outline:3px solid #fff;outline-offset:2px}
+details.year summary h2{margin:0;font-size:1.05rem;font-weight:500;color:var(--txt)}
+details.year .months{margin-top:2px}
 """
 
 
@@ -417,7 +425,7 @@ def page_index(modele, langs, lang, archives):
     crumbs, ld = fil_ariane(lang)
     if archives:
         blocs = []
-        for y in sorted({k[0] for k in archives}, reverse=True):
+        for i, y in enumerate(sorted({k[0] for k in archives}, reverse=True)):
             items = []
             for (yy, mm) in sorted((k for k in archives if k[0] == y), reverse=True):
                 n = len(archives[(yy, mm)])
@@ -426,7 +434,11 @@ def page_index(modele, langs, lang, archives):
                     f'<li><a href="{href(p_month(lang, yy, mm))}"><span>{esc(cap(label(lang, yy, mm)))}</span>'
                     f'<span class="n">{esc(compte)}</span></a></li>'
                 )
-            blocs.append(f'<section class="list"><h2>{y}</h2><ul class="months">{"".join(items)}</ul></section>')
+            # <details> : repliable sans JavaScript, et les liens restent dans le HTML (lisibles par Google).
+            # L'année la plus récente est dépliée, les autres repliées.
+            ouvert = " open" if i == 0 else ""
+            blocs.append(f'<details class="year list"{ouvert}><summary><h2>{y}</h2></summary>'
+                         f'<ul class="months">{"".join(items)}</ul></details>')
         contenu = "\n".join(blocs)
     else:
         contenu = f'<section class="list"><p class="intro">{esc(T["empty"])}</p></section>'
