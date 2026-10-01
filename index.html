@@ -128,6 +128,7 @@ dialog textarea:focus-visible,dialog input:focus-visible{outline:3px solid #fff;
  <p class="copy" id="copyright"></p>
  <p class="copy"><a id="legalLink" class="linklike" href="mentions.html"></a></p>
  <p class="copy"><a id="archiveLink" class="linklike" href="archives/">Archives</a></p>
+ <p class="copy" id="langLinks"></p>
  <div class="contactbar"><button id="openContact" class="ghost" type="button" hidden></button></div>
 
  <dialog id="contact" aria-labelledby="cTitle">
@@ -158,6 +159,12 @@ const TZ = FUSEAU || undefined;
 let T = {};            // textes chargés depuis lang/<code>.json
 let LANGS = {};        // langues actives (lang/index.json)
 let lang = "en";       // langue active
+/* Pages générées par tools/build_archives.py : une vraie URL par langue (/ = français, /en/ = anglais).
+   <html lang> donne la langue de la page ; data-pages liste les langues qui ont leur propre URL. */
+const PAGE_LANG = document.documentElement.lang || "fr";
+const PAGES = (document.documentElement.dataset.pages || "").split(" ").filter(Boolean);
+const DEFAULT_LANG = "fr";
+const urlOf = l => l === DEFAULT_LANG ? "./" : l + "/";   // relatif au dossier de base (cf. <base> dans /en/)
 let loadFailed = false;
 let report_code = "";
 
@@ -176,6 +183,7 @@ const dateOf = (y, m, d) => new Date(Date.UTC(y, m - 1, d, 12));
 const fmt = opts => new Intl.DateTimeFormat(lang, {...opts, timeZone: "UTC"});
 
 function chooseLang(){
+  if (PAGES.includes(PAGE_LANG)) return PAGE_LANG;   // page générée : sa langue est fixe, pas de détection
   try { const saved = localStorage.getItem("lang"); if (saved && LANGS[saved]) return saved; } catch(e){}
   for (const l of (navigator.languages || [navigator.language || "en"])) {
     const base = l.toLowerCase().split("-")[0];
@@ -351,6 +359,17 @@ function loadLang(code){
   return load("lang/" + code + ".json").then(d => { T[code] = d; });
 }
 
+/* un clic sur un lien de langue du bas de page compte comme un choix, comme le sélecteur */
+$("langLinks").addEventListener("click", e => {
+  const a = e.target.closest("a[hreflang]");
+  if (a) { try { localStorage.setItem("lang", a.getAttribute("hreflang")); } catch(err){} }
+});
+
+try {
+  const choisie = localStorage.getItem("lang");
+  if (PAGE_LANG === DEFAULT_LANG && choisie && choisie !== PAGE_LANG && PAGES.includes(choisie)) { location.replace(urlOf(choisie)); }
+} catch(e){}
+
 load("lang/index.json")
   .then(list => {
     LANGS = list;
@@ -358,11 +377,12 @@ load("lang/index.json")
     const sel = $("lang");
     sel.innerHTML = Object.keys(LANGS).map(k => '<option value="' + k + '">' + LANGS[k] + '</option>').join("");
     sel.value = lang;
-    sel.onchange = () => loadLang(sel.value).then(() => {
-      lang = sel.value;
-      try { localStorage.setItem("lang", lang); } catch(e){}
-      render();
-    });
+    sel.onchange = () => {
+      const l = sel.value;
+      try { localStorage.setItem("lang", l); } catch(e){}      // mentions.html s'en sert
+      if (PAGES.includes(l) && l !== PAGE_LANG) { location.href = urlOf(l); return; }
+      loadLang(l).then(() => { lang = l; render(); });
+    };
     /* l'anglais sert aussi de secours si un texte manque dans une autre langue */
     return Promise.all([loadLang("en"), loadLang(lang), loadMonth(aujourdhui().key)]);
   })
