@@ -5,14 +5,15 @@ Bunker Code : génération du site + pages d'archive.
 Ce script :
   1. copie ton site tel quel dans le dossier _site/
   2. lit tous les fichiers codes/AAAA/AAAA-MM.json
-  3. génère, pour chaque mois passé, une vraie page HTML (FR et EN) :
+  3. génère une vraie page d'accueil par langue (/ en français, /en/ en anglais), avec le texte
+     déjà écrit dans le HTML, puis, pour chaque mois passé, une page d'archive (FR et EN) :
         /archives/                  /en/archives/
         /archives/2026-08/          /en/archives/2026-08/
   4. génère sitemap.xml (et robots.txt s'il n'existe pas)
   5. vérifie les données (codes à 5 chiffres, plages valides, pas de chevauchement)
      et aligne l'accueil sur SITE_URL (og:url, og:image, canonical)
-  6. écrit le code du jour (date, chiffres) directement dans le HTML de l'accueil, pour les moteurs
-     de recherche. Le JavaScript de l'accueil le remplace ensuite par la version à jour et traduite.
+  6. écrit le code du jour et la liste des codes du mois directement dans le HTML de chaque accueil,
+     pour les moteurs de recherche. Le JavaScript de la page les remplace ensuite par la version à jour.
 
 Le design (CSS, polices, favicon) est repris automatiquement de ton index.html :
 si tu changes le style de l'accueil, les archives suivent au prochain build.
@@ -42,6 +43,7 @@ if BASE_PATH and not BASE_PATH.startswith("/"):
     BASE_PATH = "/" + BASE_PATH
 SITE_NAME = "Bunker Code"
 STATS_URL = "https://bunkera.goatcounter.com/count"   # même compteur que l'accueil ("" pour le retirer)
+X_DEFAULT = "en"               # langue montrée par Google aux pays sans version dédiée (hreflang x-default)
 INCLURE_MOIS_COURANT = False   # True = le mois en cours apparaît aussi dans les archives
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -78,6 +80,15 @@ TEXTS = {
                   "{n} codes, jour par jour, du {a} au {b} {month}.",
         "m_range": "Codes valables du {a} au {b} {month} {year}",
         "legal": "Mentions légales",
+        # --- accueil ---
+        "locale": "fr_FR",
+        "weekdays": ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"],
+        "date_fmt": "{wd} {d} {month} {y}",
+        "until_single": "Ce code est valable aujourd’hui uniquement.",
+        "until_range": "Ce code est valable du {a} au {b} {month}.",
+        "noscript": "Activez JavaScript pour que le code se mette à jour en direct. "
+                    "Codes des mois précédents : <a href=\"{link}\">archives</a>.",
+        # Titre et og:* de l'accueil français : repris tels quels de index.html (pas de clé home_*)
     },
     "en": {
         "name": "English",
@@ -104,6 +115,17 @@ TEXTS = {
                   "{n} codes, day by day, from {month} {a} to {b}.",
         "m_range": "Codes valid from {month} {a} to {b}, {year}",
         "legal": "Legal notice",
+        # --- accueil ---
+        "locale": "en_US",
+        "weekdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        "date_fmt": "{wd}, {month} {d}, {y}",
+        "until_single": "Valid today only.",
+        "until_range": "Valid from {month} {a} to {month} {b}, inclusive.",
+        "noscript": "Turn on JavaScript so the code updates live. "
+                    "Codes from previous months: <a href=\"{link}\">archive</a>.",
+        "home_title": "Bunker Code – Today's Bunker Alfa code (Last Day on Earth)",
+        "home_og_title": "Bunker Code – Today’s Bunker Alfa code",
+        "home_og_desc": "Today’s bunker A code, updated daily. Last Day on Earth, Android and iOS.",
     },
 }
 
@@ -133,16 +155,22 @@ h1.page{font-size:1.5rem;font-weight:500;margin:6px 0 2px}
 
 # Mention de bas de page par langue, lue dans lang/<code>.json (clé "footer"), comme sur l'accueil
 FOOTER = {}
+LANGJSON = {}
+
+
+def lire_lang(code):
+    """Contenu de lang/<code>.json ({} si absent ou illisible)."""
+    if code not in LANGJSON:
+        try:
+            LANGJSON[code] = json.loads((ROOT / "lang" / f"{code}.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            LANGJSON[code] = {}
+    return LANGJSON[code]
 
 
 def lire_footers(langs):
-    def cle(code):
-        try:
-            return json.loads((ROOT / "lang" / f"{code}.json").read_text(encoding="utf-8")).get("footer", "")
-        except (OSError, ValueError):
-            return ""
     for l in langs:
-        FOOTER[l] = cle(l) or cle("en")
+        FOOTER[l] = lire_lang(l).get("footer", "") or lire_lang("en").get("footer", "")
 
 
 # ----------------------------------------------------------------------------
@@ -170,6 +198,10 @@ def jour(lang, d):
 def href(chemin):
     """Lien interne : ajoute le dossier de base du site (ex. /bunkercode) si besoin."""
     return BASE_PATH + chemin
+
+
+def p_home(lang):
+    return f'{TEXTS[lang]["prefix"]}/'
 
 
 def p_index(lang):
@@ -279,15 +311,21 @@ def langues_actives():
 # ----------------------------------------------------------------------------
 # CONSTRUCTION D'UNE PAGE HTML
 # ----------------------------------------------------------------------------
+def defaut_lang(langs):
+    return X_DEFAULT if X_DEFAULT in langs else langs[0]
+
+
+def balises_alternate(langs, chemins):
+    """Balises hreflang (une par langue + x-default). Chaque page doit lister toutes les versions, elle-même comprise."""
+    out = "\n".join(f'<link rel="alternate" hreflang="{l}" href="{SITE_URL}{chemins[l]}">' for l in langs)
+    return out + f'\n<link rel="alternate" hreflang="x-default" href="{SITE_URL}{chemins[defaut_lang(langs)]}">'
+
+
 def page(modele, langs, lang, chemins, titre, desc, corps, jsonld):
     """chemins = {langue: chemin} de cette même page dans chaque langue (pour hreflang)."""
     T = TEXTS[lang]
     canon = SITE_URL + chemins[lang]
-    alternates = "\n".join(
-        f'<link rel="alternate" hreflang="{l}" href="{SITE_URL}{chemins[l]}">' for l in langs
-    )
-    defaut = "fr" if "fr" in langs else langs[0]
-    alternates += f'\n<link rel="alternate" hreflang="x-default" href="{SITE_URL}{chemins[defaut]}">'
+    alternates = balises_alternate(langs, chemins)
 
     options = "".join(
         f'<option value="{href(chemins[l])}" data-lang="{l}"{" selected" if l == lang else ""}>{esc(TEXTS[l]["name"])}</option>'
@@ -330,7 +368,7 @@ def page(modele, langs, lang, chemins, titre, desc, corps, jsonld):
 <body>
 <main>
  <header>
-  <p class="brand"><a href="{href("/")}">{SITE_NAME}</a></p>
+  <p class="brand"><a href="{href(p_home(lang))}">{SITE_NAME}</a></p>
   <select id="lang" aria-label="Language">{options}</select>
   <noscript>{liens_secours}</noscript>
  </header>
@@ -354,7 +392,7 @@ document.getElementById("lang").onchange = function () {{
 def fil_ariane(lang, dernier=None, y=None, m=None):
     """Retourne (html visible, données structurées) du fil d'Ariane."""
     T = TEXTS[lang]
-    etapes = [(SITE_NAME, "/"), (T["archives"], p_index(lang))]
+    etapes = [(SITE_NAME, p_home(lang)), (T["archives"], p_index(lang))]
     if dernier:
         etapes.append((dernier, p_month(lang, y, m)))
     visible = []
@@ -450,20 +488,20 @@ def page_mois(modele, langs, lang, y, m, lignes, prec, suiv):
 # SITEMAP / ROBOTS
 # ----------------------------------------------------------------------------
 def sitemap(langs, cles):
-    defaut = "fr" if "fr" in langs else langs[0]
-    groupes = [{None: "/"}, {l: p_index(l) for l in langs}]
+    defaut = defaut_lang(langs)
+    homes = {p_home(l) for l in langs}
+    groupes = [{l: p_home(l) for l in langs}, {l: p_index(l) for l in langs}]
     groupes += [{l: p_month(l, y, m) for l in langs} for (y, m) in cles]
     out = ['<?xml version="1.0" encoding="UTF-8"?>',
            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">']
     for g in groupes:
         for l, chemin in g.items():
             out.append(f"<url><loc>{SITE_URL}{chemin}</loc>")
-            if chemin == "/":
+            if chemin in homes:
                 out.append(f"<lastmod>{aujourdhui().isoformat()}</lastmod>")
-            if l is not None:
-                for l2, c2 in g.items():
-                    out.append(f'<xhtml:link rel="alternate" hreflang="{l2}" href="{SITE_URL}{c2}"/>')
-                out.append(f'<xhtml:link rel="alternate" hreflang="x-default" href="{SITE_URL}{g[defaut]}"/>')
+            for l2, c2 in g.items():
+                out.append(f'<xhtml:link rel="alternate" hreflang="{l2}" href="{SITE_URL}{c2}"/>')
+            out.append(f'<xhtml:link rel="alternate" hreflang="x-default" href="{SITE_URL}{g[defaut]}"/>')
             out.append("</url>")
     out.append("</urlset>")
     return "\n".join(out) + "\n"
@@ -472,9 +510,6 @@ def sitemap(langs, cles):
 # ----------------------------------------------------------------------------
 # PROGRAMME PRINCIPAL
 # ----------------------------------------------------------------------------
-JOURS_FR = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
-
-
 def code_du_jour(mois):
     """Ligne (début, fin, code) valable aujourd'hui (UTC), ou None."""
     t = aujourdhui()
@@ -484,36 +519,107 @@ def code_du_jour(mois):
     return None
 
 
-def prerendre_accueil(h, mois):
-    """Écrit le code du jour (en français) dans le HTML de l'accueil.
-    Le JS de l'accueil reconstruit ces éléments au chargement : les visiteurs voient donc toujours
-    la version à jour, dans leur langue. Seuls les robots qui n'exécutent pas le JS lisent ce texte."""
-    ligne = code_du_jour(mois)
-    if not ligne:
-        print("Info : pas de code pour aujourd'hui, l'accueil n'est pas pré-rempli.")
-        return h
-    a, b, code = ligne
-    t = aujourdhui()
-    fr = TEXTS["fr"]
-    mois_nom = fr["months"][t.month - 1]
-    date_txt = cap(f"{JOURS_FR[t.weekday()]} {jour('fr', t.day)} {mois_nom} {t.year}")
-    if a == b:
-        until = "Ce code est valable aujourd’hui uniquement."
-    else:
-        until = f"Ce code est valable du {jour('fr', a)} au {jour('fr', b)} {mois_nom}."
-    chiffres = "".join(f'<span aria-hidden="true">{esc(c)}</span>' for c in code)
-    chiffres += f'<span class="sr">{esc(code)}</span>'
-
-    for motif, contenu in (
-        (r'(<p class="date" id="date">)\s*(</p>)', esc(date_txt)),
-        (r'(<div class="digits" id="digits">)\s*(</div>)', chiffres),
-        (r'(<p class="until" id="until">)\s*(</p>)', esc(until)),
-    ):
-        h, n = re.subn(motif, lambda m, c=contenu: m.group(1) + c + m.group(2), h, count=1)
-        if not n:
-            print(f"Attention : emplacement introuvable dans index.html ({motif.split(chr(34))[3]}), pré-remplissage incomplet.")
-    print(f"OK : accueil pré-rempli avec le code du {date_txt} ({code}).")
+def remplir(h, motif, contenu, nom):
+    """Remplace le contenu d'une balise de index.html. motif = 3 groupes : ouverture, ancien contenu, fermeture."""
+    h, n = re.subn(motif, lambda m: m.group(1) + contenu + m.group(3), h, count=1, flags=re.S)
+    if not n:
+        print(f"Attention : emplacement introuvable dans index.html ({nom}), cette partie n'est pas pré-remplie.")
     return h
+
+
+def prerendre_accueil(h, mois, lang):
+    """Écrit dans le HTML de l'accueil (dans la langue de la page) le code du jour et la liste des codes du mois.
+    Le JS de la page reconstruit ces éléments au chargement : les visiteurs voient donc toujours la version
+    à jour. Les robots, eux, lisent ce texte tel quel."""
+    T, J = TEXTS[lang], lire_lang(lang)
+    t = aujourdhui()
+    mois_nom = T["months"][t.month - 1]
+    lignes = mois.get((t.year, t.month), [])
+    ligne = code_du_jour(mois)
+
+    if ligne:
+        a, b, code = ligne
+        date_txt = cap(T["date_fmt"].format(wd=T["weekdays"][t.weekday()], d=jour(lang, t.day), month=mois_nom, y=t.year))
+        if a == b:
+            until = T["until_single"]
+        else:
+            until = T["until_range"].format(a=jour(lang, a), b=jour(lang, b), month=mois_nom)
+        chiffres = "".join(f'<span aria-hidden="true">{esc(c)}</span>' for c in code)
+        chiffres += f'<span class="sr">{esc(code)}</span>'
+        h = remplir(h, r'(<p class="date" id="date">)(.*?)(</p>)', esc(date_txt), "date")
+        h = remplir(h, r'(<div class="digits" id="digits">)(.*?)(</div>)', chiffres, "chiffres")
+        h = remplir(h, r'(<p class="until" id="until">)(.*?)(</p>)', esc(until), "validité")
+        print(f"OK [{lang}] : accueil pré-rempli avec le code du {date_txt} ({code}).")
+    else:
+        print(f"Info [{lang}] : pas de code pour aujourd'hui, le code n'est pas pré-rempli.")
+
+    if lignes:
+        if J.get("all"):
+            titre = J["all"].replace("{month}", label(lang, t.year, t.month))
+            h = remplir(h, r'(<h2 id="tt">)(.*?)(</h2>)', esc(titre), "titre de la liste")
+        rows = []
+        for a, b, c in lignes:
+            cls = ' class="now"' if ligne and ligne[0] == a else ""
+            plage = str(a) if a == b else f"{a} – {b}"
+            rows.append(f"<tr{cls}><td>{plage}</td><td>{esc(c)}</td></tr>")
+        rows = "".join(rows)
+        h = remplir(h, r'(<tbody id="rows">)(.*?)(</tbody>)', rows, "liste des codes")
+    return h
+
+
+def construire_accueil(src, lang, langs, mois):
+    """Version complète de l'accueil pour une langue, à partir du gabarit index.html (qui est en français)."""
+    T, J = TEXTS[lang], lire_lang(lang)
+    chemins = {l: p_home(l) for l in langs}
+    canon = SITE_URL + chemins[lang]
+    h = src
+
+    # --- langue, balises <head>
+    h = h.replace('<html lang="fr">', f'<html lang="{lang}" data-pages="{" ".join(langs)}">', 1)
+    if "data-pages" not in h:
+        print("Attention : <html lang=\"fr\"> introuvable dans index.html.")
+    depth = len([x for x in T["prefix"].split("/") if x])
+    if depth:   # les chemins relatifs de la page (lang/, codes/, archives/…) restent valables depuis /en/
+        h = h.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n<base href="' + "../" * depth + '">', 1)
+    h = remplir(h, r'(<meta property="og:url" content=")(.*?)(">)', canon, "og:url")
+    if "home_title" in T:   # langues autres que le français : le gabarit est en français
+        h = remplir(h, r"(<title>)(.*?)(</title>)", esc(T["home_title"]), "title")
+        h = remplir(h, r'(<meta name="description" content=")(.*?)(">)', esc(J.get("metaDesc", "")), "description")
+        h = remplir(h, r'(<meta property="og:title" content=")(.*?)(">)', esc(T["home_og_title"]), "og:title")
+        h = remplir(h, r'(<meta property="og:description" content=")(.*?)(">)', esc(T["home_og_desc"]), "og:description")
+    autres_locales = "".join(
+        f'\n<meta property="og:locale:alternate" content="{TEXTS[l]["locale"]}">' for l in langs if l != lang)
+    tete = (f'<link rel="canonical" href="{canon}">\n{balises_alternate(langs, chemins)}\n'
+            f'<meta property="og:locale" content="{T["locale"]}">{autres_locales}\n')
+    h = h.replace("<title>", tete + "<title>", 1)
+
+    # --- corps de page : textes de la langue
+    if "home_title" in T:
+        h = remplir(h, r'(<p class="sub" id="sub">)(.*?)(</p>)', esc(J.get("sub", "")), "sous-titre")
+    lien_archives = href(p_index(lang))
+    if T["prefix"]:   # liens absolus vers les pages sans version dans cette langue ou à un autre niveau
+        h = h.replace('href="archives/"', f'href="{lien_archives}"')
+        h = h.replace('href="mentions.html"', f'href="{href("/mentions.html")}"')
+    h = re.sub(r'<noscript><p class="err">.*?</noscript>',
+               lambda m: f'<noscript><p class="err">{T["noscript"].format(link=lien_archives)}</p></noscript>',
+               h, count=1, flags=re.S)
+    options = "".join(
+        f'<option value="{l}"{" selected" if l == lang else ""}>{esc(TEXTS[l]["name"])}</option>' for l in langs)
+    h = remplir(h, r'(<select id="lang"[^>]*>)(.*?)(</select>)', options, "sélecteur de langue")
+    if FOOTER.get(lang):
+        h = remplir(h, r'(<footer id="footer">)(.*?)(</footer>)', esc(FOOTER[lang]), "pied de page")
+    an = aujourdhui().year
+    h = remplir(h, r'(<p class="copy" id="copyright">)(.*?)(</p>)',
+                "© " + (f"2026–{an}" if an > 2026 else "2026") + " Obi", "copyright")
+    h = remplir(h, r'(<a id="legalLink"[^>]*>)(.*?)(</a>)', esc(T["legal"]), "mentions légales")
+    h = remplir(h, r'(<a id="archiveLink"[^>]*>)(.*?)(</a>)', esc(J.get("archive") or T["archives"]), "archives")
+    # vrais liens vers les autres langues (un <select> n'est pas suivi par les moteurs de recherche)
+    liens = " · ".join(
+        f'<a class="linklike" href="{href(chemins[l])}" hreflang="{l}" lang="{l}">{esc(TEXTS[l]["name"])}</a>'
+        for l in langs if l != lang)
+    h = remplir(h, r'(<p class="copy" id="langLinks">)(.*?)(</p>)', liens, "liens de langue")
+
+    return prerendre_accueil(h, mois, lang)
 
 
 def main():
@@ -529,21 +635,15 @@ def main():
     lire_footers(langs)
     mois = lire_mois()
 
-    # 2b. l'accueil reprend SITE_URL (og:url, og:image), reçoit une balise canonical et le code du jour
-    idx = OUT / "index.html"
-    h = idx.read_text(encoding="utf-8").replace("https://bunkercode.fr", SITE_URL)
-    if 'rel="canonical"' not in h:
-        h = h.replace("<title>", f'<link rel="canonical" href="{SITE_URL}/">\n<title>', 1)
-    h = prerendre_accueil(h, mois)
-    idx.write_text(h, encoding="utf-8")
-
     t = aujourdhui()
     limite = (t.year, t.month)
     archives = {k: v for k, v in mois.items() if k < limite or (INCLURE_MOIS_COURANT and k == limite)}
     cles = sorted(archives)
 
-    # 3. pages
+    # 3. accueil (une vraie page par langue) puis archives
+    src = (ROOT / "index.html").read_text(encoding="utf-8").replace("https://bunkercode.fr", SITE_URL)
     for lang in langs:
+        ecrire(p_home(lang), construire_accueil(src, lang, langs, mois))
         ecrire(p_index(lang), page_index(modele, langs, lang, archives))
         for i, (y, m) in enumerate(cles):
             prec = cles[i - 1] if i > 0 else None
