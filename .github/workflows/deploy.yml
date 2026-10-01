@@ -27,13 +27,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - id: pages
-        uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v5
       - name: Générer le site (accueils FR et EN, archives, sitemap)
         run: python tools/build_archives.py
         env:
-          SITE_URL: ${{ steps.pages.outputs.base_url }}
-          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          # Domaine personnalisé : adresses fixées ici, sans dépendre de ce que GitHub renvoie.
+          # Le site est à la racine de bunkercode.fr, donc pas de dossier de base.
+          SITE_URL: "https://bunkercode.fr"
+          BASE_PATH: ""
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
